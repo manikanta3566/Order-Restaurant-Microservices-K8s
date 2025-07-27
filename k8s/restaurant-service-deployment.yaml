@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: restaurant-service
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: restaurant
+  template:
+    metadata:
+      labels:
+        app: restaurant
+    spec:
+      containers:
+        - name: restaurant
+          image: manikanta44/restaurant-service:1.0.0
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql-service:3306/order_db
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: common-config
+                  key: SPRING_PROFILES_ACTIVE
+            - name: MYSQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_USERNAME
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_PASSWORD
+            - name: SPRING_BOOT_ADMIN_CLIENT_URL
+              value: http://monitor-service:8080
+            # Expose all actuator endpoints
+            - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
+              value: "*"
+
+            # Ensure health details are shown
+            - name: MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS
+              value: ALWAYS
+
+            # Management port (same as app port to serve /actuator from same port)
+            - name: MANAGEMENT_SERVER_PORT
+              value: "9093"
+            - name: SPRING_BOOT_ADMIN_CLIENT_INSTANCE_SERVICE-BASE-URL
+              value: http://restaurant-service:9093/
+            - name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+              value: http://eureka:8761/eureka
+            - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
+              value: "false"
+            - name: EUREKA_INSTANCE_HOSTNAME
+              value: "restaurant-service"
+          ports:
+            - containerPort: 9093
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: restaurant-service
+  namespace: microservices
+spec:
+  selector:
+    app: restaurant
+  ports:
+    - port: 9093

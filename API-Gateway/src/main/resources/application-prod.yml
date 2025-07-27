@@ -1,0 +1,9 @@
+spring:
+  boot:
+    admin:
+      client:
+        url: http://monitor-service/
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-service/eureka
